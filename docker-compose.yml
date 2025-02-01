@@ -4,7 +4,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile.web
+      dockerfile: docker/Dockerfile.web
     ports:
       - "7860:7860"
     depends_on:
@@ -13,6 +13,6 @@ services:
   fastapi:
     build:
       context: .
-      dockerfile: Dockerfile.app
+      dockerfile: docker/Dockerfile.app
     ports:
       - "8000:8000"
