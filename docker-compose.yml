@@ -7,8 +7,12 @@ services:
       dockerfile: docker/Dockerfile.web
     ports:
       - "7860:7860"
+    volumes:
+      - sqlite_data:/app/data
     depends_on:
       - fastapi
+    environment:
+      - DATABASE_URL=sqlite:///data/test.db
 
   fastapi:
     build:
@@ -16,3 +20,10 @@ services:
       dockerfile: docker/Dockerfile.app
     ports:
       - "8000:80"
+    volumes:
+      - sqlite_data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///data/test.db
+
+volumes:
+  sqlite_data:

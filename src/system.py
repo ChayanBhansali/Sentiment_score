@@ -1,48 +1,17 @@
 # main.py
-import os
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, JSON, ForeignKey, DateTime
-from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
-from datetime import datetime
+from sqlalchemy.orm import sessionmaker, Session
 from src.factory import ModelFactory
+from src.db import db_base, TextEntry, TextRequest, AnalysisResult, engine
 
-db_url = os.getenv("DATABASE_URL", "sqlite:///./test.db")
-engine = create_engine(db_url, connect_args={"check_same_thread": False} if "sqlite" in db_url else {})
-session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-db_base = declarative_base()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # FastAPI setup
 app = FastAPI()
-
-def get_db():
-    db = session_local
-    try:
-        yield db
-    finally:
-        db.close()
-
-# Models
-class TextEntry(db_base):
-    __tablename__ = "text_entries"
-    id = Column(Integer, primary_key=True, index=True)
-    input_text = Column(String, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    results = relationship("AnalysisResult", back_populates="text_entry")
-
-class AnalysisResult(db_base):
-    __tablename__ = "analysis_results"
-    id = Column(Integer, primary_key=True, index=True)
-    text_id = Column(Integer, ForeignKey("text_entries.id"))
-    emotion_scores = Column(JSON)
-    education_scores = Column(JSON)
-    text_entry = relationship("TextEntry", back_populates="results")
-
-class TextRequest(BaseModel):
-    text: str
+db_base.metadata.create_all(bind=engine)
 
 @app.post("/analyze/")
-def analyze_text(request: TextRequest, db: Session = Depends(get_db)):
+def analyze_text(request: TextRequest, db: Session = Depends(lambda: SessionLocal())):
     try:
         text_entry = TextEntry(input_text=request.text)
         db.add(text_entry)
@@ -76,7 +45,7 @@ def analyze_text(request: TextRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/logs/")
-def get_logs(db: Session = Depends(get_db)):
+def get_logs(db: Session = Depends(lambda: SessionLocal())):
     logs = db.query(TextEntry).join(AnalysisResult).all()
     response = []
     for log in logs:
