@@ -8,7 +8,7 @@ from datetime import datetime
 import os
 
 # Import models
-from models_loader import emotion_model, education_model  # Import the models here
+from factory import ModelFactory  # Import the models here
 
 # Database setup
 db_url = os.getenv("DATABASE_URL", "sqlite:///./test.db")
@@ -54,10 +54,13 @@ def analyze_text(request: TextRequest, db: Session = Depends(get_db)):
         db.add(text_entry)
         db.commit()
         db.refresh(text_entry)
-        
+
+        model_factory = ModelFactory()
+        emotion_model = model_factory.get_model("emotion")
+        education_model = model_factory.get_model("education")
         emotion_scores = emotion_model(request.text)
         education_scores = education_model(request.text)
-        
+
         analysis_result = AnalysisResult(
             text_id=text_entry.id,
             emotion_scores=emotion_scores,
@@ -66,7 +69,7 @@ def analyze_text(request: TextRequest, db: Session = Depends(get_db)):
         db.add(analysis_result)
         db.commit()
         db.refresh(analysis_result)
-        
+
         return {
             "id": text_entry.id,
             "text": request.text,
