@@ -10,6 +10,9 @@ COPY . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Download models
+RUN python -m src.download_models
+
 # Make port 80 available to the world outside this container
 EXPOSE 80
 

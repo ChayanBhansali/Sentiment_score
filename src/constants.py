@@ -8,3 +8,5 @@ MODEL_CONFIGS = {
         "model": "HuggingFaceFW/fineweb-edu-classifier",
     }
 }
+
+MODEL_LIST = [model["model"] for model in MODEL_CONFIGS.values()]
