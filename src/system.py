@@ -5,38 +5,32 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, JSON, ForeignKey, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
 from datetime import datetime
-from contextlib import asynccontextmanager
 from src.factory import ModelFactory
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    db_url = os.getenv("DATABASE_URL", "sqlite:///./test.db")
-    engine = create_engine(db_url, connect_args={"check_same_thread": False} if "sqlite" in db_url else {})
-    app.state.session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    app.state.db_base = declarative_base()
-    yield
-    # Shutdown code
-    app.state.session_local.close_all()
+db_url = os.getenv("DATABASE_URL", "sqlite:///./test.db")
+engine = create_engine(db_url, connect_args={"check_same_thread": False} if "sqlite" in db_url else {})
+session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+db_base = declarative_base()
 
 # FastAPI setup
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 def get_db():
-    db = app.state.session_local
+    db = session_local
     try:
         yield db
     finally:
         db.close()
 
 # Models
-class TextEntry(app.state.db_base):
+class TextEntry(db_base):
     __tablename__ = "text_entries"
     id = Column(Integer, primary_key=True, index=True)
     input_text = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
     results = relationship("AnalysisResult", back_populates="text_entry")
 
-class AnalysisResult(app.state.db_base):
+class AnalysisResult(db_base):
     __tablename__ = "analysis_results"
     id = Column(Integer, primary_key=True, index=True)
     text_id = Column(Integer, ForeignKey("text_entries.id"))
