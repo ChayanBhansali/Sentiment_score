@@ -168,26 +168,73 @@ def fetch_data():
     finally:
         db.close()
 
+# def plot_spider_chart(scores: Dict) -> plt.Figure:
+#     """
+#     Create spider chart from scores
+#     """
+#     labels = list(scores.keys())
+#     values = list(scores.values())
+
+#     num_vars = len(labels)
+#     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+#     values += values[:1]
+#     angles += angles[:1]
+
+#     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "polar"})
+#     ax.fill(angles, values, color='blue', alpha=0.25)
+#     ax.plot(angles, values, color='blue', linewidth=2)
+#     ax.set_xticks(angles[:-1])
+#     ax.set_xticklabels(labels)
+#     ax.set_yticklabels([])
+
+#     return fig
 def plot_spider_chart(scores: Dict) -> plt.Figure:
     """
-    Create spider chart from scores
+    Create a clean and simple spider chart with labels offset and centered like the example.
     """
     labels = list(scores.keys())
     values = list(scores.values())
 
     num_vars = len(labels)
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    
+    # Close the plot
     values += values[:1]
     angles += angles[:1]
 
+    # Create the figure and set the background color
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={"projection": "polar"})
-    ax.fill(angles, values, color='blue', alpha=0.25)
-    ax.plot(angles, values, color='blue', linewidth=2)
+    fig.patch.set_facecolor("#27272B")  # Set the background color of the figure
+    ax.set_facecolor("#27272B")  # Set the background color of the polar plot
+
+    # Fill area with a color that contrasts well with the background
+    ax.fill(angles, values, color='#3B82F6', alpha=0.3)  # Light blue fill
+    ax.plot(angles, values, color='white', linewidth=2)  # White line for the chart
+
+    # Set the range of the radial grid and labels
+    ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    ax.set_yticklabels(["20%", "40%", "60%", "80%", "100%"], fontsize=9, color="white")  # White radial grid labels
     ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels)
-    ax.set_yticklabels([])
+    ax.set_xticklabels(labels, fontsize=8, fontweight="medium", color="white")  # White axis labels
+    ax.tick_params(axis='x', pad=13)  # Increase pad value to move labels further out
+
+    
+    # Add score labels at end points if score > 0, offset outward
+    for i, (angle, value) in enumerate(zip(angles[:-1], values[:-1])):
+        if value > 0:
+            offset_factor = 1.2  # Adjust this to position labels further outward
+            ax.text(
+                angle, value * offset_factor, f"{value:.2f}",
+                fontsize=8, fontweight="bold", color="white",  # White label text
+                ha="center", va="center"
+            )
+    
+    # Hide radial gridlines to match the style in the example
+    ax.spines['polar'].set_visible(False)
+    ax.grid(color="white", linestyle="--", linewidth=0.5)  # White dashed gridlines
 
     return fig
+
 
 def process_text(text: str):
     """
@@ -222,6 +269,7 @@ def update_table(order: str):
     df["Scores"] = df["Scores"].apply(json.dumps)
     df = df.sort_values(by="Timestamp", ascending=(order == "Ascending"))
     return df
+text = "I am feeling happy and excited about this project. I am also learning a lot from it."
 
 # Create Gradio interface
 with gr.Blocks() as app:
@@ -229,7 +277,7 @@ with gr.Blocks() as app:
 
     with gr.Row():
         # Text input for analysis
-        text_input = gr.Textbox(label="Enter text to analyze", lines=3)
+        text_input = gr.Textbox(label="Enter text to analyze", lines=3, value=text )
         analyze_btn = gr.Button("Analyze")
 
     with gr.Row():

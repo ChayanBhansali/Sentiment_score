@@ -55,7 +55,7 @@ starlette==0.45.3
 sympy==1.13.1
 tokenizers==0.21.0
 tomlkit==0.13.2
-torch==2.6.0
+torch
 tqdm==4.67.1
 transformers==4.48.2
 typer==0.15.1
