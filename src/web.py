@@ -89,7 +89,7 @@ import json
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
-from src.db import engine, TextEntry, AnalysisResult
+from src.db import engine, TextEntry, AnalysisResult, db_base
 from typing import Dict, Tuple
 import logging
 
@@ -97,6 +97,7 @@ import logging
 # from src.models import get_emotion_scores, get_education_scores  # You'll need to implement these
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+db_base.metadata.create_all(bind=engine)
 
 # Use a pipeline as a high-level helper
 # Use a pipeline as a high-level helper
@@ -108,16 +109,18 @@ def analyze_text(text: str) -> Tuple[Dict, Dict]:
     """
     Analyze input text and return emotion and education scores
     """
-    emotion_pipe = pipeline("text-classification", model="SamLowe/roberta-base-go_emotions")
+    emotion_pipe = pipeline("text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None)
 
     # edu_pipe = pipeline("text-classification", model="HuggingFaceFW/fineweb-edu-classifier")
-    edu_pipe = pipeline("text-classification", model="HuggingFaceFW/fineweb-edu-classifier")
+    edu_pipe = pipeline("text-classification", model="HuggingFaceFW/fineweb-edu-classifier", top_k=None)
 
-    emotion_scores = emotion_pipe([text])  # Implement this function
-    education_scores = edu_pipe([text]) # Implement this function
+    emotion_scores = emotion_pipe(text)  # Implement this function
+    education_scores = edu_pipe(text) # Implement this function
     # emotion_scores = get_emotion_scores(text)  # Implement this function
     # education_scores = get_education_scores(text)  # Implement this function
-    return emotion_scores, education_scores
+    emotion_scores_dict = {emotion_scores[0][res]["label"]: emotion_scores[0][res]["score"] for res in range(4)}
+    education_scores_dict = {"educational": res["score"] for res in education_scores[0]}
+    return emotion_scores_dict, education_scores_dict
 
 def save_to_database(text: str, emotion_scores: Dict, education_scores: Dict) -> int:
     """
@@ -132,8 +135,6 @@ def save_to_database(text: str, emotion_scores: Dict, education_scores: Dict) ->
         )
         db.add(text_entry)
         db.flush()  # Flush to get the ID
-        logging.info(emotion_scores)
-        logging.info(education_scores)
 
         # Create analysis result
         analysis_result = AnalysisResult(
@@ -206,9 +207,10 @@ def process_text(text: str):
     data = fetch_data()
     df = pd.DataFrame(data, columns=["ID", "Text", "Timestamp", "Scores"])
     df["Timestamp"] = pd.to_datetime(df["Timestamp"])
+    df["Scores"] = df["Scores"].apply(json.dumps)
     df = df.sort_values(by="Timestamp", ascending=False)
 
-    return fig, df.drop(columns=["Scores"])
+    return fig, df
 
 def update_table(order: str):
     """
@@ -217,8 +219,9 @@ def update_table(order: str):
     data = fetch_data()
     df = pd.DataFrame(data, columns=["ID", "Text", "Timestamp", "Scores"])
     df["Timestamp"] = pd.to_datetime(df["Timestamp"])
+    df["Scores"] = df["Scores"].apply(json.dumps)
     df = df.sort_values(by="Timestamp", ascending=(order == "Ascending"))
-    return df.drop(columns=["Scores"])
+    return df
 
 # Create Gradio interface
 with gr.Blocks() as app:
