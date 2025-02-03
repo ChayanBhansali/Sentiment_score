@@ -93,15 +93,10 @@ from src.db import engine, TextEntry, AnalysisResult, db_base
 from typing import Dict, Tuple
 import logging
 
-# Assuming you have these model inference functions defined elsewhere
-# from src.models import get_emotion_scores, get_education_scores  # You'll need to implement these
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 db_base.metadata.create_all(bind=engine)
 
-# Use a pipeline as a high-level helper
-# Use a pipeline as a high-level helper
-# from transformers import pipeline
 
 from transformers import pipeline
 
@@ -270,34 +265,74 @@ def update_table(order: str):
     df = df.sort_values(by="Timestamp", ascending=(order == "Ascending"))
     return df
 text = "I am feeling happy and excited about this project. I am also learning a lot from it."
+def get_entry_by_id(text_id: int):
+    """
+    Fetch a specific entry by ID
+    """
+    data = fetch_data()
+    return next((entry for entry in data if entry[0] == text_id), None)
 
-# Create Gradio interface
+def display_graph_by_id(text_id: int):
+    """
+    Display spider chart for a specific text entry
+    """
+    entry = get_entry_by_id(text_id)
+    if entry is None:
+        return None, f"No entry found with ID {text_id}"
+    
+    fig = plot_spider_chart(entry[3])
+    return fig, f"Displaying graph for text: {entry[1][:100]}..."
+
 with gr.Blocks() as app:
-    gr.Markdown("# Real-time Text Analysis Dashboard")
+    gr.Markdown("<h1 style='font-size: 48px; text-align: left'>Text Analysis Dashboard</h1>")
 
+    # New Analysis Section
+    gr.Markdown("## Write the text you want to analyze")
     with gr.Row():
-        # Text input for analysis
-        text_input = gr.Textbox(label="Enter text to analyze", lines=3, value=text )
-        analyze_btn = gr.Button("Analyze")
+        with gr.Column(scale=1):
+            text_input = gr.Textbox(label="Enter text to analyze", lines=3 , value=text)
+            analyze_btn = gr.Button("Analyze")
+        
+        with gr.Column(scale=2):
+            new_plot_output = gr.Plot()
+            # new_text_output = gr.Textbox(label="Analysis Info", interactive=False)
+    
+    gr.Markdown("---")  # Separator
 
+    # Historical View Section
+    gr.Markdown("## View Historical Data")
     with gr.Row():
-        # Visualization output
-        plot_output = gr.Plot()
+        with gr.Column(scale=1):
+            id_input = gr.Number(label="Enter Text ID to view graph", precision=0,minimum=1, value=1)
+            view_btn = gr.Button("View Graph")
+        
+        with gr.Column(scale=2):
+            historical_plot_output = gr.Plot()
+            historical_text_output = gr.Textbox(label="Historical Info", interactive=False)
 
+    gr.Markdown("---")  # Separator
+
+    # Table Section
+    gr.Markdown("## Data Table")
     with gr.Row():
-        # Table controls and output
         order_dropdown = gr.Dropdown(
             ["Ascending", "Descending"],
             label="Sort by Timestamp",
             value="Descending"
         )
-        table_output = gr.Dataframe()
+    table_output = gr.Dataframe()
 
     # Set up event handlers
     analyze_btn.click(
         process_text,
         inputs=text_input,
-        outputs=[plot_output, table_output]
+        outputs=[new_plot_output, table_output]
+    )
+
+    view_btn.click(
+        display_graph_by_id,
+        inputs=id_input,
+        outputs=[historical_plot_output, historical_text_output]
     )
 
     order_dropdown.change(
