@@ -26,5 +26,5 @@ To run the application using Docker Compose, follow these steps:
     ```sh
     docker-compose down
     ```
-# Snapshot
+# Demo Video
 ![Demo Video](https://github.com/ChayanBhansali/Sentiment_score/blob/main/video.gif)
