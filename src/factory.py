@@ -1,5 +1,7 @@
 from transformers import pipeline
 from src.constants import MODEL_CONFIGS
+import requests
+import os
 
 class ModelFactory:
     def __init__(self):
@@ -13,3 +15,12 @@ class ModelFactory:
             else:
                 raise ValueError(f"Unknown model name: {model_name}")
         return self.models[model_name]
+
+    def get_model_scores(self, input_text):
+
+        payload = {
+            "text": input_text
+        }
+        API_URL = os.getenv("API_URL", "http://localhost:8000")
+        response = requests.post(f"{API_URL}/analyze/", json=payload)
+        return response.json()

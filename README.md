@@ -41,7 +41,7 @@
     docker-compose down
     ```
 
-### Option 2: Running with Uvicorn 
+### Option 2: Running with Uvicorn
 
 
 #### Steps
@@ -52,7 +52,7 @@
     ```
 
 2. **Create a Virtual Environment** (Recommended)
-    
+
 
 3. **Install Dependencies**
     ```sh
@@ -62,6 +62,7 @@
 4. **Run the Application**
     ```sh
     uvicorn src.web:app --host 0.0.0.0 --port 7860
+    uvicorn src.system:app --host 0.0.0.0 --port 8000
     ```
 
 5. **Access the Application**

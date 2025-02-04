@@ -12,7 +12,8 @@ services:
     depends_on:
       - fastapi
     environment:
-      - DATABASE_URL=sqlite:///data/test.db
+      - DATABASE_URL=sqlite:///data/new.db
+      - API_URL=http://fastapi
 
   fastapi:
     build:
@@ -23,7 +24,7 @@ services:
     volumes:
       - sqlite_data:/app/data
     environment:
-      - DATABASE_URL=sqlite:///data/test.db
+      - DATABASE_URL=sqlite:///data/new.db
 
 volumes:
   sqlite_data:
